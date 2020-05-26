@@ -3,6 +3,7 @@ package migrations
 import (
 	"github.com/Paulo-Ariel-Pareja/bank-backend-go/helpers"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type User struct {
@@ -21,7 +22,7 @@ type Account struct {
 }
 
 func connectDB() *gorm.DB {
-	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=postgres dbname=bankapp password=postgress sslmode=disable")
+	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=postgres dbname=bankapp password=postgres sslmode=disable")
 	helpers.HandleErr(err)
 	return db
 }
