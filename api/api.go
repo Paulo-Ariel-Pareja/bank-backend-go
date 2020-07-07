@@ -8,7 +8,8 @@ import (
 	"net/http"
 
 	"github.com/Paulo-Ariel-Pareja/bank-backend-go/helpers"
-	"github.com/Paulo-Ariel-Pareja/bank-backend-go/interfaces"
+	"github.com/Paulo-Ariel-Pareja/bank-backend-go/transactions"
+	"github.com/Paulo-Ariel-Pareja/bank-backend-go/useraccounts"
 	"github.com/Paulo-Ariel-Pareja/bank-backend-go/users"
 	"github.com/gorilla/mux"
 )
@@ -17,6 +18,13 @@ type Register struct {
 	Username string
 	Email    string
 	Password string
+}
+
+type TransactionBody struct {
+	UserId uint
+	From   uint
+	To     uint
+	Amount int
 }
 
 type Login struct {
@@ -37,7 +45,7 @@ func apiResponse(call map[string]interface{}, w http.ResponseWriter) {
 		json.NewEncoder(w).Encode(resp)
 	} else {
 		// Error
-		resp := interfaces.ErrResponse{Message: "Usuario o contraseña incorrecto"}
+		resp := call
 		json.NewEncoder(w).Encode(resp)
 	}
 }
@@ -71,11 +79,34 @@ func getuser(w http.ResponseWriter, r *http.Request) {
 	apiResponse(user, w)
 }
 
+func getMyTransactions(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userId := vars["userID"]
+	auth := r.Header.Get("Authorization")
+
+	transactions := transactions.GetMyTransactions(userId, auth)
+	apiResponse(transactions, w)
+}
+
+func transaction(w http.ResponseWriter, r *http.Request) {
+	body := rearbody(r)
+	auth := r.Header.Get("Authorization")
+	var formattedBody TransactionBody
+	err := json.Unmarshal(body, &formattedBody)
+	helpers.HandleErr(err)
+
+	operation := useraccounts.Transaction(formattedBody.UserId, formattedBody.From, formattedBody.To, formattedBody.Amount, auth)
+	apiResponse(operation, w)
+
+}
+
 func StartApi() {
 	router := mux.NewRouter()
 	router.Use(helpers.PanicHandle)
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/register", register).Methods("POST")
+	router.HandleFunc("/transaction", transaction).Methods("POST")
+	router.HandleFunc("/transaction/{userID}", getMyTransactions).Methods("GET")
 	router.HandleFunc("/user/{id}", getuser).Methods("GET")
 	fmt.Println("App iniciada en el puerto 8888")
 	log.Fatal(http.ListenAndServe(":8888", router))
